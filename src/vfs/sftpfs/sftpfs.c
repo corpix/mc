@@ -806,7 +806,6 @@ sftpfs_cb_dir_load (struct vfs_class *me, struct vfs_s_inode *dir, const char *r
 static gboolean
 sftpfs_cb_errnoisrbl (struct vfs_class *me)
 {
-  fprintf(stderr, "error %d\n", me->verrno);
   switch (me->verrno)
     {
         case LIBSSH2_ERROR_NONE:
@@ -843,7 +842,6 @@ sftpfs_cb_reconnect (struct vfs_class *me)
 
         if (super_base_to_retry == NULL || super_base_to_retry->me != vfs_sftpfs_ops)
             continue;
-        fprintf(stderr, "reconnecting\n");
         sftpfs_close_connection (super_base_to_retry, "Reconnecting session (global attempt)", NULL);
         open_ret = sftpfs_open_connection (super_base_to_retry, &mcerror);
 
