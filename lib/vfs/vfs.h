@@ -204,6 +204,9 @@ typedef struct vfs_class
 
     int (*ctl) (void *vfs_info, int ctlop, void *arg);
     int (*setctl) (const vfs_path_t *vpath, int ctlop, void *arg);
+
+    gboolean (*errnoisrbl) (struct vfs_class *me);
+    gboolean (*reconnect) (struct vfs_class *me);
 } vfs_class;
 
 /*

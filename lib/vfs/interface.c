@@ -218,7 +218,11 @@ mc_open (const vfs_path_t *vpath, int flags, ...)
         // open must be supported
         info = me->open (vpath, flags, mode);
         if (info == NULL)
+        {
             errno = vfs_ferrno (me);
+            if (me->reconnect != NULL && me->errnoisrbl != NULL && me->errnoisrbl(me) == TRUE)
+              me->reconnect(me);
+        }
         else
             result = vfs_new_handle (me, info);
     }

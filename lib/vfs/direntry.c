@@ -1524,6 +1524,8 @@ vfs_init_class (struct vfs_class *vclass, const char *name, vfs_flags_t flags, c
     vclass->nothingisopen = vfs_s_nothingisopen;
     vclass->free = vfs_s_free;
     vclass->setctl = vfs_s_setctl;
+    vclass->errnoisrbl = NULL;
+    vclass->reconnect = NULL;
     if ((vclass->flags & VFSF_USETMP) != 0)
     {
         vclass->getlocalcopy = vfs_s_getlocalcopy;

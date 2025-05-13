@@ -27,6 +27,7 @@
 
 #include <config.h>
 #include <errno.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>  // memset()
 
@@ -802,6 +803,61 @@ sftpfs_cb_dir_load (struct vfs_class *me, struct vfs_s_inode *dir, const char *r
     return 0;
 }
 
+static gboolean
+sftpfs_cb_errnoisrbl (struct vfs_class *me)
+{
+  fprintf(stderr, "error %d\n", me->verrno);
+  switch (me->verrno)
+    {
+        case LIBSSH2_ERROR_NONE:
+            return TRUE;
+        case LIBSSH2_ERROR_SOCKET_SEND:
+        case LIBSSH2_ERROR_SOCKET_RECV:
+        case LIBSSH2_ERROR_SOCKET_DISCONNECT:
+        case LIBSSH2_ERROR_SOCKET_TIMEOUT:
+        case LIBSSH2_ERROR_CHANNEL_CLOSED:
+        case LIBSSH2_ERROR_TIMEOUT:
+        case LIBSSH2_ERROR_EAGAIN:
+            return TRUE;
+        case ETIMEDOUT:
+        case ENETUNREACH:
+        case ECONNRESET:
+        case EPIPE:
+        case EIO:
+        case ENOENT:
+            return TRUE;
+        default:
+            return FALSE;
+    }
+}
+
+static gboolean
+sftpfs_cb_reconnect (struct vfs_class *me)
+{
+    GList *iter;
+    for (iter = sftpfs_subclass.supers; iter != NULL; iter = g_list_next (iter))
+    {
+        struct vfs_s_super *super_base_to_retry = (struct vfs_s_super *) iter->data;
+        GError *mcerror = NULL;
+        int open_ret;
+
+        if (super_base_to_retry == NULL || super_base_to_retry->me != vfs_sftpfs_ops)
+            continue;
+        fprintf(stderr, "reconnecting\n");
+        sftpfs_close_connection (super_base_to_retry, "Reconnecting session (global attempt)", NULL);
+        open_ret = sftpfs_open_connection (super_base_to_retry, &mcerror);
+
+        if (open_ret != 0)
+        {
+            mc_error_message (&mcerror, NULL);
+        }
+        return TRUE;
+    }
+    return FALSE;
+}
+
+
+
 /* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
@@ -846,6 +902,9 @@ vfs_init_sftpfs (void)
     vfs_sftpfs_ops->unlink = sftpfs_cb_unlink;
     vfs_sftpfs_ops->rename = sftpfs_cb_rename;
     vfs_sftpfs_ops->ferrno = sftpfs_cb_errno;
+
+    vfs_sftpfs_ops->errnoisrbl = sftpfs_cb_errnoisrbl;
+    vfs_sftpfs_ops->reconnect = sftpfs_cb_reconnect;
 
     sftpfs_subclass.archive_same = sftpfs_archive_same;
     sftpfs_subclass.new_archive = sftpfs_new_archive;
